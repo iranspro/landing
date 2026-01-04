@@ -15,7 +15,7 @@ export default function Home() {
     // جایگزین کنید با اطلاعات خودتان
     const BOT_TOKEN = "8555568494:AAEZSVrEqS_g1OJUkCoUOzvJWk7zLwB2FrQ"; 
     const CHAT_ID = "-1003616532531";
-    const text = `🔔 *ایمیل جدید ثبت شد!*\n\n📧 ایمیل: \`${email}\`\n🌐 دامنه: irans.pro`;
+    const text = `🔔 <b>ایمیل جدید ثبت شد!</b>\n\n📧 ایمیل: <code>${email}</code>\n🌐 دامنه: irans.pro`;
 
     try {
       const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -24,7 +24,7 @@ export default function Home() {
         body: JSON.stringify({
           chat_id: CHAT_ID,
           text: text,
-          parse_mode: "MarkdownV2",
+          parse_mode: "HTML",
         }),
       });
 
