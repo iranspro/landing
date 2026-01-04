@@ -1,6 +1,45 @@
-import { Github, Download, Smartphone, Apple, Monitor, Mail, ShieldCheck, Info, Server, Settings, Copy, ExternalLink, HelpCircle, Lock, Share2 } from "lucide-react";
+"use client";
+import { useState } from "react";
+import { Github, Download, Smartphone, Apple, Monitor, Mail, ShieldCheck, Info, Server, Settings, Copy, ExternalLink, HelpCircle, Lock, Share2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function Home() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus("loading");
+
+    // جایگزین کنید با اطلاعات خودتان
+    const BOT_TOKEN = "8555568494:AAEZSVrEqS_g1OJUkCoUOzvJWk7zLwB2FrQ"; 
+    const CHAT_ID = "-1003616532531";
+    const text = `🔔 *ایمیل جدید ثبت شد!*\n\n📧 ایمیل: \`${email}\`\n🌐 دامنه: irans.pro`;
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: text,
+          parse_mode: "MarkdownV2",
+        }),
+      });
+
+      if (response.ok) {
+        setStatus("success");
+        setEmail("");
+        setTimeout(() => setStatus("idle"), 5000);
+      } else {
+        setStatus("error");
+      }
+    } catch (error) {
+      setStatus("error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0f1a] text-white font-sans selection:bg-accent/30 bg-pattern" dir="rtl">
       {/* Background Glows & Patterns */}
@@ -113,16 +152,38 @@ export default function Home() {
             <h2 className="text-xl md:text-2xl font-bold">Email Subscription</h2>
             <Lock size={20} className="text-accent md:w-6 md:h-6" />
           </div>
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 md:gap-4">
             <input 
               type="email" 
-              placeholder="ایمیل خود را وارد کنید" 
-              className="flex-1 bg-[#111827]/80 border border-white/10 rounded-2xl px-5 md:px-6 py-3.5 md:py-4 text-right focus:outline-none focus:border-accent/50 transition-all backdrop-blur-md input-focus text-sm md:text-base"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              dir="ltr"
+              placeholder="your@email.com" 
+              className="flex-1 bg-[#111827]/80 border border-white/10 rounded-2xl px-5 md:px-6 py-3.5 md:py-4 text-left focus:outline-none focus:border-accent/50 transition-all backdrop-blur-md input-focus text-sm md:text-base"
             />
-            <button className="bg-accent text-black px-8 md:px-10 py-3.5 md:py-4 rounded-2xl font-bold hover:bg-accent/90 transition-all btn-glow text-sm md:text-base">
-              اطلاع بده
+            <button 
+              type="submit"
+              disabled={status === "loading" || status === "success"}
+              className="bg-accent text-black px-8 md:px-10 py-3.5 md:py-4 rounded-2xl font-bold hover:bg-accent/90 transition-all btn-glow text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[140px]"
+            >
+              {status === "loading" ? (
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : status === "success" ? (
+                <>
+                  <CheckCircle2 size={18} />
+                  ثبت شد
+                </>
+              ) : status === "error" ? (
+                <>
+                  <AlertCircle size={18} />
+                  خطا
+                </>
+              ) : (
+                "اطلاع بده"
+              )}
             </button>
-          </div>
+          </form>
           <p className="text-center text-gray-500 text-xs md:text-sm mt-4 md:mt-5 font-medium">بدون ردیابی • بدون اسپم</p>
         </section>
 
