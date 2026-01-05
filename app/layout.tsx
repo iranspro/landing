@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "İrans Pro - اینترنت آزاد برای ایران",
+  title: "Irans Pro - اینترنت آزاد برای ایران",
   description: "ابزارهای دسترسی آزاد برای مبارزه با سانسور اینترنت",
 };
 
