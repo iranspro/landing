@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { YekanBakh } from "@/lib/font";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import SplineBackground from "@/components/layout/spline-background";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 
 export const metadata: Metadata = {
   title: "Irans Pro - اینترنت آزاد برای ایران",
@@ -24,11 +16,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl">
-      <body
-        className={`${YekanBakh.variable} ${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0f1a] text-white font-yekan`}
-      >
-        {children}
+    <html lang="fa" dir="rtl" className={YekanBakh.variable}>
+      <body className="antialiased bg-[#0a0f1a] text-white font-yekan">
+        <SplineBackground />
+        <div className="relative z-10 max-w-2xl mx-auto px-4 py-4 md:py-8 flex flex-col items-center">
+          <Header />
+          <main className="w-full">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );

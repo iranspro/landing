@@ -1,30 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0f1a;
-  --foreground: #ffffff;
-  --accent: #4ade80;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --font-sans: var(--font-yekan-bakh), var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  --color-background: #0a0f1a;
+  --color-foreground: #ffffff;
+  --color-accent: #4ade80;
   --font-yekan: var(--font-yekan-bakh);
+  --font-sans: var(--font-yekan-bakh), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-yekan-bakh), system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
-    "Open Sans", "Helvetica Neue", sans-serif;
-  overflow-x: hidden;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    overflow-x: hidden;
+  }
 }
 
-.bg-pattern {
+@utility bg-pattern {
   background-image: radial-gradient(
     circle at 2px 2px,
     rgba(255, 255, 255, 0.03) 1px,
@@ -33,44 +32,43 @@ body {
   background-size: 32px 32px;
 }
 
-.card-glow {
-  /* background: rgba(0, 0, 0, 0.2); */
+@utility card-glow {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 8px 32px 0 rgba(74, 222, 128, 0.05);
+    border-color: rgba(74, 222, 128, 0.2);
+    transform: translateY(-2px);
+  }
 }
 
-.card-glow:hover {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 8px 32px 0 rgba(74, 222, 128, 0.05);
-  border-color: rgba(74, 222, 128, 0.2);
-  transform: translateY(-2px);
-}
-
-.btn-glow {
+@utility btn-glow {
   box-shadow: 0 0 15px rgba(74, 222, 128, 0.15);
   transition: all 0.3s ease;
   cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 0 25px rgba(74, 222, 128, 0.3);
+    transform: translateY(-1px);
+  }
 }
 
-.btn-glow:hover {
-  box-shadow: 0 0 25px rgba(74, 222, 128, 0.3);
-  transform: translateY(-1px);
-}
-
-.glass-panel {
+@utility glass-panel {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.input-focus {
+@utility input-focus {
   transition: all 0.3s ease;
-}
 
-.input-focus:focus {
-  box-shadow: 0 0 15px rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.3);
+  &:focus {
+    box-shadow: 0 0 15px rgba(74, 222, 128, 0.1);
+    border-color: rgba(74, 222, 128, 0.3);
+  }
 }
