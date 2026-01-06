@@ -4,7 +4,6 @@ import "./globals.css";
 import SplineBackground from "@/components/layout/spline-background";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Irans Pro - اینترنت آزاد برای ایران",
@@ -24,9 +23,7 @@ export default function RootLayout({
           <main className="w-full">{children}</main>
           <Footer />
         </div>
-        <Suspense>
-          <SplineBackground />
-        </Suspense>
+        <SplineBackground />
       </body>
     </html>
   );
