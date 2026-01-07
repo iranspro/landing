@@ -1,36 +1,207 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IransPro Landing & API 🚀
 
-## Getting Started
+Next.js application with OTP authentication and Marzban VPN integration.
 
-First, run the development server:
+## 🏗️ Architecture
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Framework**: Next.js 15+ (App Router)
+- **Database**: PostgreSQL + Prisma ORM
+- **Authentication**: JWT + TOTP (Time-based OTP)
+- **VPN Panel**: PasarGuard API Integration
+- **Email**: Nodemailer (SMTP)
+- **Styling**: Tailwind CSS
+
+## 📁 Project Structure
+
+```
+landing/
+├── app/
+│   ├── api/                    # API Routes
+│   │   ├── auth/
+│   │   │   ├── send-otp/       # POST - Send OTP to email
+│   │   │   └── verify-otp/     # POST - Verify OTP & create subscription
+│   │   └── user/
+│   │       └── me/             # GET - Get user info (authenticated)
+│   ├── guide/                  # Setup guides
+│   └── page.tsx               # Landing page
+├── lib/
+│   ├── email.ts               # Email service (Nodemailer)
+│   ├── jwt.ts                 # JWT helpers
+│   ├── pasarguard.ts          # PasarGuard API client
+│   ├── prisma.ts              # Prisma client
+│   ├── rate-limit.ts          # Rate limiting logic
+│   └── totp.ts                # TOTP generation/verification
+└── prisma/
+    └── schema.prisma          # Database schema
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Quick Start
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Install Dependencies
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm install
+```
 
-## Learn More
+### 2. Setup Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cp .env.example .env.local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Required variables:**
 
-## Deploy on Vercel
+```env
+# Database
+DATABASE_URL="postgresql://admin:password@localhost:5432/iranspro"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# PasarGuard
+PASARGUARD_URL="http://localhost:8000"
+PASARGUARD_USERNAME="admin"
+PASARGUARD_PASSWORD="admin"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Email (SMTP)
+SMTP_HOST="smtp.titan.email"
+SMTP_PORT=587
+SMTP_USER="your-email@domain.com"
+SMTP_PASS="your-password"
+EMAIL_FROM="IransPro <noreply@domain.com>"
+
+# Security (generate random secrets)
+OTP_MASTER_SECRET="$(openssl rand -base64 32)"
+JWT_SECRET="$(openssl rand -base64 64)"
+
+# App
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+### 3. Setup Database
+
+```bash
+# Generate Prisma client
+pnpm prisma generate
+
+# Run migrations
+pnpm prisma migrate dev
+
+# (Optional) Open Prisma Studio
+pnpm prisma studio
+```
+
+### 4. Run Development Server
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+## 📡 API Endpoints
+
+### Authentication
+
+**POST /api/auth/send-otp**
+```json
+// Request
+{ "email": "user@example.com" }
+
+// Response
+{
+  "success": true,
+  "message": "کد تایید به ایمیل شما ارسال شد",
+  "expiresIn": 60,
+  "remaining": 2
+}
+```
+
+**POST /api/auth/verify-otp**
+```json
+// Request
+{ 
+  "email": "user@example.com",
+  "code": "123456"
+}
+
+// Response
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": "...",
+    "email": "user@example.com",
+    "subscription": {
+      "url": "vmess://...",
+      "status": "active",
+      "dataLimit": "10737418240",
+      "dataUsed": "0",
+      "expiryDate": "2026-02-07T..."
+    }
+  }
+}
+```
+
+### User
+
+**GET /api/user/me**  
+Headers: `Authorization: Bearer <token>`
+
+```json
+// Response
+{
+  "user": {
+    "id": "...",
+    "email": "user@example.com",
+    "subscription": {
+      "url": "vmess://...",
+      "status": "active",
+      "dataLimit": "10737418240",
+      "dataUsed": "524288000",
+      "dataRemaining": "10212930240",
+      "expiryDate": "2026-02-07T..."
+    }
+  }
+}
+```
+
+## 🔒 Security Features
+
+- **Rate Limiting**: Max 3 OTP requests per hour per email
+- **Cooldown**: 30 seconds between OTP requests
+- **TOTP**: Codes expire after 60 seconds
+- **JWT**: 30-day token expiration
+- **No OTP Storage**: OTPs generated on-the-fly, not stored in DB
+
+## 🛠️ Development
+
+```bash
+# Run dev server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Run production server
+pnpm start
+
+# Type checking
+pnpm tsc --noEmit
+
+# Prisma commands
+pnpm prisma studio          # Open database GUI
+pnpm prisma migrate dev     # Create migration
+pnpm prisma generate        # Generate Prisma Client
+```
+
+## 📚 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [PasarGuard Documentation](https://docs.pasarguard.org)
+
+## 📝 Notes
+
+- Make sure PostgreSQL and PasarGuard are running before starting the app
+- Use the parent `docker-compose.yml` to run all services together
+- Check [../README.fa.md](../README.fa.md) for full setup guide in Persian

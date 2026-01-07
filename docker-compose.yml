@@ -1,0 +1,131 @@
+# Docker Compose for IransPro Production
+# Traefik + Next.js + PostgreSQL + PasarGuard
+
+version: '3.8'
+
+services:
+  # Traefik Reverse Proxy with SSL
+  traefik:
+    image: traefik:v2.11
+    container_name: iranspro_traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@irans.pro"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Redirect HTTP to HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    labels:
+      - "traefik.enable=true"
+      # Dashboard
+      - "traefik.http.routers.traefik.rule=Host(`traefik.irans.pro`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/" # admin:admin
+    networks:
+      - iranspro
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: iranspro_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: iranspro
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d iranspro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iranspro
+
+  # PasarGuard VPN Panel
+  pasarguard:
+    image: pasarguard/panel:latest
+    container_name: iranspro_pasarguard
+    restart: unless-stopped
+    environment:
+      UVICORN_HOST: "0.0.0.0"
+      UVICORN_PORT: 8000
+      SQLALCHEMY_DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/iranspro"
+    volumes:
+      - pasarguard_data:/var/lib/pasarguard
+      - pasarguard_logs:/opt/pasarguard/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pasarguard.rule=Host(`panel.irans.pro`)"
+      - "traefik.http.routers.pasarguard.entrypoints=websecure"
+      - "traefik.http.routers.pasarguard.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pasarguard.loadbalancer.server.port=8000"
+    networks:
+      - iranspro
+
+  # Next.js Landing Page
+  landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iranspro_landing
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/iranspro"
+      PASARGUARD_URL: "http://pasarguard:8000"
+      NEXT_PUBLIC_APP_URL: "https://irans.pro"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pasarguard:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      # Main domain
+      - "traefik.http.routers.landing.rule=Host(`irans.pro`) || Host(`www.irans.pro`)"
+      - "traefik.http.routers.landing.entrypoints=websecure"
+      - "traefik.http.routers.landing.tls.certresolver=letsencrypt"
+      - "traefik.http.services.landing.loadbalancer.server.port=3000"
+      # Redirect www to non-www
+      - "traefik.http.middlewares.redirect-www.redirectregex.regex=^https://www\\.irans\\.pro/(.*)"
+      - "traefik.http.middlewares.redirect-www.redirectregex.replacement=https://irans.pro/$${1}"
+      - "traefik.http.routers.landing.middlewares=redirect-www"
+    networks:
+      - iranspro
+
+volumes:
+  traefik_letsencrypt:
+    driver: local
+  postgres_data:
+    driver: local
+  pasarguard_data:
+    driver: local
+  pasarguard_logs:
+    driver: local
+
+networks:
+  iranspro:
+    driver: bridge

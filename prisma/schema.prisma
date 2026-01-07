@@ -1,0 +1,48 @@
+// Prisma Schema for IransPro
+// One table design: User contains both auth and subscription data
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+  
+  // ═══════════════════════════════════════
+  // OTP & Rate Limiting
+  // ═══════════════════════════════════════
+  lastOtpSent        DateTime? // آخرین زمان ارسال OTP
+  otpRequestCount    Int       @default(0) // تعداد درخواست در ساعت جاری
+  otpRequestsResetAt DateTime? // زمان reset شدن counter
+  
+  // ═══════════════════════════════════════
+  // VPN Subscription (nullable تا زمان فعال‌سازی)
+  // ═══════════════════════════════════════
+  marzbanUsername    String?   @unique // username در پنل مرزبان
+  subscriptionUrl    String?   // لینک subscription (vmess://, vless://, etc)
+  subscriptionStatus String?   // pending, active, expired, disabled, limit_reached
+  
+  dataLimit  BigInt?   // حجم کل به بایت (مثلا 10GB = 10737418240)
+  dataUsed   BigInt    @default(0) // حجم مصرف شده به بایت
+  expiryDate DateTime? // تاریخ انقضای سابسکریپشن
+  
+  // ═══════════════════════════════════════
+  // Metadata
+  // ═══════════════════════════════════════
+  subscriptionCreatedAt DateTime? // زمان ایجاد سابسکریپشن
+  lastSyncedAt          DateTime? // آخرین sync با مرزبان
+  
+  createdAt DateTime @default(now()) // زمان ایجاد کاربر
+  updatedAt DateTime @updatedAt // آخرین به‌روزرسانی
+  
+  @@index([email])
+  @@index([marzbanUsername])
+  @@index([subscriptionStatus])
+  @@index([expiryDate])
+}
