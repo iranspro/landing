@@ -10,11 +10,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
-# Delete package-lock if exists to avoid version conflicts
-RUN rm -f package-lock.json
-
 # Install dependencies (prisma generate runs in postinstall)
-RUN npm install --no-audit
+RUN npm ci --no-audit || npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
