@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Mail, HelpCircle, ArrowLeft, ExternalLink } from "lucide-react";
+import { ChevronRight, Mail, HelpCircle, ArrowLeft, ExternalLink, Smartphone, Monitor } from "lucide-react";
 
 // Importing logos from assets
 import streisandLogo from "@/assets/streisand/logo.svg";
@@ -109,6 +109,46 @@ export default function GuidePage() {
               <div>
                 <h3 className="text-lg font-bold">Streisand (iOS)</h3>
                 <p className="text-gray-400 text-xs">نرم‌افزار قدرتمند و سریع</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-accent text-sm font-bold">
+              مشاهده آموزش
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* v2rayNG Guide Card (Android) */}
+          <Link 
+            href="/guide/v2rayng"
+            className="group card-glow p-6 rounded-3xl hover:bg-white/[0.03] transition-all border border-white/5 hover:border-accent/20"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-white/5 p-3 rounded-2xl group-hover:bg-[#3DDC84]/10 transition-colors">
+                <Smartphone size={48} className="text-[#3DDC84]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">v2rayNG (Android)</h3>
+                <p className="text-gray-400 text-xs">مناسب برای گوشی‌های اندروید</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-accent text-sm font-bold">
+              مشاهده آموزش
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* v2rayN Guide Card (Desktop) */}
+          <Link 
+            href="/guide/v2rayn"
+            className="group card-glow p-6 rounded-3xl hover:bg-white/[0.03] transition-all border border-white/5 hover:border-accent/20"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-white/5 p-3 rounded-2xl group-hover:bg-[#6366f1]/10 transition-colors">
+                <Monitor size={48} className="text-[#6366f1]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">v2rayN (Desktop)</h3>
+                <p className="text-gray-400 text-xs">مناسب برای ویندوز، مک و لینوکس</p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-accent text-sm font-bold">
