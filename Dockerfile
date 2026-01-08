@@ -1,59 +1,68 @@
 # ================= BASE =================
-FROM node:20-bullseye AS base
+# Debian-based image to avoid musl/native-binary issues (Tailwind v4, LightningCSS, etc.)
+FROM node:20-bullseye-slim AS base
 
 WORKDIR /app
-
-# نصب ابزارهای لازم برای rebuild native modules
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    python3 \
-    make \
-    gcc \
-    g++ \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
 
 # ================= DEPS =================
 FROM base AS deps
 
-# فقط package.json و package-lock.json رو کپی کن
+# Build tools for native modules
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ ca-certificates openssl && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 
-# نصب dependency ها
-RUN npm ci --ignore-scripts
+# Install deps (includes dev deps, needed for build)
+RUN npm ci --no-audit --no-fund
 
 # ================= BUILDER =================
 FROM base AS builder
 
-# کپی کردن node_modules از مرحله deps
-COPY --from=deps /app/node_modules ./node_modules
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates openssl && \
+    rm -rf /var/lib/apt/lists/*
 
-# کپی کل سورس کد
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# rebuild LightningCSS از سورس (حل مشکل missing binary)
-RUN npm rebuild lightningcss --build-from-source
-
-# generate Prisma client
+# Prisma Client
 RUN npx prisma generate
 
-# ================= BUILD =================
-# Build Next.js
-# --no-turbopack برای جلوگیری از ارور LightningCSS
-RUN NEXT_EXPERIMENTAL_TURBOPACK=false npm run build
+# Force webpack build (avoids Turbopack native binding edge-cases)
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx next build --webpack
 
 # ================= RUNNER =================
-FROM base AS runner
+FROM node:20-bullseye-slim AS runner
 
 WORKDIR /app
 
-# فقط فایل های لازم برای run
-COPY --from=builder /app/.next ./.next
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Runtime deps for Prisma (OpenSSL)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates openssl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
+
+# Next.js standalone output
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Prisma schema + migrations
 COPY --from=builder /app/prisma ./prisma
+
+USER nextjs
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# migrate + start
+CMD ["sh", "-c", "npx prisma@6.10.0 migrate deploy && node server.js"]
