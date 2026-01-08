@@ -1,44 +1,46 @@
-# syntax=docker/dockerfile:1
+# استفاده از Node.js LTS به عنوان تصویر پایه
+FROM node:20-alpine AS base
 
-# Multi-stage Next.js build using npm with a minimal runtime image
-
-# 1) Dependencies layer
-FROM node:20-alpine AS deps
+# مرحله 1: نصب وابستگی‌ها
+FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
 
+# کپی فایل‌های package
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-
-
-
-
-
-# 2) Builder layer
-FROM node:20-alpine AS builder
+# مرحله 2: ساخت پروژه
+FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build-time public envs for Next.js
-ENV NODE_ENV=production
+# غیرفعال کردن تلمتری Next.js (اختیاری)
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the app
 RUN npm run build
 
-
-
-
-
-
-# 3) Production runtime
-FROM node:20-alpine AS runner
+# مرحله 3: اجرای پروژه در حالت production
+FROM base AS runner
 WORKDIR /app
 
-# Copy the build from the first stage
-COPY --from=builder /app .
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# کپی فایل‌های استاتیک و ضروری
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
 
 EXPOSE 3000
-# Start Next.js via node directly; no npm/pnpm at runtime
-CMD ["npm", "start"]
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
