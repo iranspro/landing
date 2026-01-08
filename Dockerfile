@@ -21,6 +21,10 @@ RUN npm install --no-audit --no-fund
 RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('node_modules/lightningcss/package.json','utf8')); process.stdout.write(p.optionalDependencies['lightningcss-linux-x64-gnu']);" \
     | xargs -I{} npm install --no-audit --no-fund --no-save lightningcss-linux-x64-gnu@{}
 
+# Ensure Tailwind Oxide native binary package is present on Linux
+RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('node_modules/@tailwindcss/oxide/package.json','utf8')); process.stdout.write(p.optionalDependencies['@tailwindcss/oxide-linux-x64-gnu']);" \
+    | xargs -I{} npm install --no-audit --no-fund --no-save @tailwindcss/oxide-linux-x64-gnu@{}
+
 # ================= BUILDER =================
 FROM base AS builder
 
