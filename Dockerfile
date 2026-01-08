@@ -17,6 +17,10 @@ COPY package.json package-lock.json ./
 # Install deps (do NOT use npm ci here: package-lock generated on Windows can miss Linux optional deps)
 RUN npm install --no-audit --no-fund
 
+# Ensure lightningcss native binary package is present on Linux
+RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('node_modules/lightningcss/package.json','utf8')); process.stdout.write(p.optionalDependencies['lightningcss-linux-x64-gnu']);" \
+    | xargs -I{} npm install --no-audit --no-fund --no-save lightningcss-linux-x64-gnu@{}
+
 # ================= BUILDER =================
 FROM base AS builder
 
