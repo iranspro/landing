@@ -4,20 +4,19 @@ WORKDIR /app
 
 # ---------- Dependencies ----------
 FROM base AS deps
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+COPY package.json package-lock.json ./
 
-RUN \
-  if [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm install --frozen-lockfile; \
-  elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  else echo "No lockfile found" && exit 1; \
-  fi
+# ⛔ جلوگیری از prisma generate موقع npm ci
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+
+RUN npm ci
 
 # ---------- Builder ----------
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# حالا prisma هست → generate امنه
 RUN npx prisma generate
 RUN npm run build
 
@@ -36,5 +35,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-# migrate + start
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
