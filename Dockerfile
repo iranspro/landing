@@ -6,13 +6,14 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Copy package files AND prisma schema (needed for postinstall)
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 
 # Delete package-lock if exists to avoid version conflicts
 RUN rm -f package-lock.json
 
-# Install dependencies
+# Install dependencies (prisma generate runs in postinstall)
 RUN npm install --no-audit
 
 # Rebuild the source code only when needed
