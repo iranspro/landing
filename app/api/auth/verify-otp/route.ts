@@ -127,25 +127,27 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // ارسال ایمیل سابسکریپشن
-        const emailService = getEmailService();
-        await emailService.sendSubscription({
-          to: normalizedEmail,
-          subscriptionUrl,
-          dataLimit: DEFAULT_DATA_LIMIT,
-          expiryDate,
-        });
+        // ارسال ایمیل سابسکریپشن (فقط اگر subscriptionUrl موجود باشه)
+        if (subscriptionUrl) {
+          const emailService = getEmailService();
+          await emailService.sendSubscription({
+            to: normalizedEmail,
+            subscriptionUrl,
+            dataLimit: DEFAULT_DATA_LIMIT,
+            expiryDate,
+          });
 
-        // ارسال اعلان به تلگرام
-        const telegramService = getTelegramService();
-        await telegramService.notifyNewSubscription({
-          email: normalizedEmail,
-          username: username,
-          subscriptionUrl,
-          dataLimit: DEFAULT_DATA_LIMIT,
-          expiryDate,
-          createdAt: new Date(),
-        });
+          // ارسال اعلان به تلگرام
+          const telegramService = getTelegramService();
+          await telegramService.notifyNewSubscription({
+            email: normalizedEmail,
+            username: username,
+            subscriptionUrl,
+            dataLimit: DEFAULT_DATA_LIMIT,
+            expiryDate,
+            createdAt: new Date(),
+          });
+        }
       } catch (error) {
         console.error('PasarGuard error:', error);
         return NextResponse.json(
