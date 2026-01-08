@@ -13,7 +13,7 @@ const requestSchema = z.object({
   email: z.string().email('ایمیل معتبر وارد کنید'),
 });
 
-const DEFAULT_DATA_LIMIT = 10 * 1024 * 1024 * 1024; // 10GB در بایت
+const DEFAULT_DATA_LIMIT = 1 * 1024 * 1024 * 1024; // 10GB در بایت
 const DEFAULT_VALIDITY_DAYS = 30;
 
 /**
