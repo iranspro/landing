@@ -66,15 +66,10 @@ services:
     environment:
       UVICORN_HOST: "0.0.0.0"
       UVICORN_PORT: 8000
-      SQLALCHEMY_DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/iranspro"
       SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
       SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
     volumes:
       - marzban_data:/var/lib/marzban
-      - marzban_logs:/var/log/marzban
-    depends_on:
-      postgres:
-        condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.marzban.rule=Host(`panel.irans.pro`)"
@@ -122,8 +117,6 @@ volumes:
   postgres_data:
     driver: local
   marzban_data:
-    driver: local
-  marzban_logs:
     driver: local
 
 networks:
