@@ -2,11 +2,19 @@
 FROM node:20-slim AS base
 WORKDIR /app
 
+# نصب ابزارهای build لازم برای native deps مثل lightningcss
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3 \
+    make \
+    gcc \
+    g++ \
+    openssl \
+ && rm -rf /var/lib/apt/lists/*
+
 # ================= DEPS =================
 FROM base AS deps
 COPY package.json package-lock.json ./
-
-# اسکریپت‌ها اجرا نمی‌شن (Prisma امن)
 RUN npm ci --ignore-scripts
 
 # ================= BUILDER =================
@@ -14,7 +22,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 🔥 خیلی مهم: native deps (lightningcss) اینجا ساخته می‌شن
+# ⚡ Rebuild native deps (lightningcss)
 RUN npm rebuild lightningcss --build-from-source
 
 # Prisma
@@ -26,7 +34,6 @@ RUN npm run build
 # ================= RUNNER =================
 FROM node:20-slim AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
 ENV PORT=3000
 
