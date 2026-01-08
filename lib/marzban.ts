@@ -76,6 +76,10 @@ class MarzbanClient {
       // Token معمولا 30 دقیقه معتبره، ما 25 دقیقه در نظر می‌گیریم
       this.tokenExpiry = Date.now() + 25 * 60 * 1000;
 
+      if (!this.token) {
+        throw new Error('No access token received from Marzban');
+      }
+
       return this.token;
     } catch (error) {
       console.error('Marzban authentication error:', error);
