@@ -22,8 +22,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Rebuild native modules for Alpine
-RUN npm rebuild lightningcss
+# Rebuild all native modules for Alpine (musl libc)
+RUN npm rebuild
 
 # Build Next.js application (prisma generate happens in postinstall)
 ENV NEXT_TELEMETRY_DISABLED 1
