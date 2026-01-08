@@ -1,9 +1,9 @@
 # Multi-stage build for Next.js production
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy package files AND prisma schema (needed for postinstall)
@@ -15,7 +15,7 @@ RUN npm ci --no-audit || npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy dependencies
