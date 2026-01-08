@@ -18,12 +18,12 @@ FROM base AS builder
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Copy dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Copy package files and install fresh
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+RUN npm ci --no-audit
 
-# Rebuild all native modules for Alpine (musl libc)
-RUN npm rebuild
+COPY . .
 
 # Build Next.js application (prisma generate happens in postinstall)
 ENV NEXT_TELEMETRY_DISABLED 1
