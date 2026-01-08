@@ -1,13 +1,11 @@
 # Docker Compose for IransPro Production
-# Traefik + Next.js + PostgreSQL + PasarGuard
-
-version: '3.8'
+# Traefik + Next.js + PostgreSQL + Marzban
 
 services:
   # Traefik Reverse Proxy with SSL
   traefik:
     image: traefik:v2.11
-    container_name: iranspro_traefik
+    container_name: traefik
     restart: unless-stopped
     command:
       - "--api.dashboard=true"
@@ -39,12 +37,12 @@ services:
       - "traefik.http.routers.traefik.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/" # admin:admin
     networks:
-      - iranspro
+      - default
 
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: iranspro_postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: iranspro
@@ -58,12 +56,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - iranspro
+      - default
 
   # Marzban VPN Panel
   marzban:
     image: gozargah/marzban:latest
-    container_name: iranspro_marzban
+    container_name: marzban
     restart: unless-stopped
     environment:
       UVICORN_HOST: "0.0.0.0"
@@ -84,14 +82,14 @@ services:
       - "traefik.http.routers.marzban.tls.certresolver=letsencrypt"
       - "traefik.http.services.marzban.loadbalancer.server.port=8000"
     networks:
-      - iranspro
+      - default
 
   # Next.js Landing Page
   landing:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: iranspro_landing
+    container_name: landing
     restart: unless-stopped
     env_file: .env.local
     environment:
@@ -116,7 +114,7 @@ services:
       - "traefik.http.middlewares.redirect-www.redirectregex.replacement=https://irans.pro/$${1}"
       - "traefik.http.routers.landing.middlewares=redirect-www"
     networks:
-      - iranspro
+      - default
 
 volumes:
   traefik_letsencrypt:
