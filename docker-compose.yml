@@ -68,20 +68,17 @@ services:
     environment:
       SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
       SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
-      # Tell Marzban we're behind reverse proxy
       XRAY_SUBSCRIPTION_URL_PREFIX: "https://panel.irans.pro"
     volumes:
       - marzban_data:/var/lib/marzban
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.marzban.rule=Host(`panel.irans.pro`)"
       - "traefik.http.routers.marzban.entrypoints=websecure"
       - "traefik.http.routers.marzban.tls.certresolver=letsencrypt"
-      - "traefik.http.services.marzban.loadbalancer.server.url=http://host.docker.internal:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "traefik.http.services.marzban.loadbalancer.server.port=8000"
     networks:
       - default
 
