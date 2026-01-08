@@ -66,8 +66,8 @@ services:
     container_name: marzban
     restart: unless-stopped
     environment:
-      SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
-      SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
+      SUDO_USERNAME: "admin"
+      SUDO_PASSWORD: "PasarGuard_Admin_2026!"
       XRAY_SUBSCRIPTION_URL_PREFIX: "https://panel.irans.pro"
     volumes:
       - marzban_data:/var/lib/marzban
