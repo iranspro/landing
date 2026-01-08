@@ -68,6 +68,9 @@ services:
       UVICORN_PORT: 8000
       SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
       SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
+      # Disable SSL since Traefik handles it
+      UVICORN_SSL_CERTFILE: ""
+      UVICORN_SSL_KEYFILE: ""
     volumes:
       - marzban_data:/var/lib/marzban
     labels:
