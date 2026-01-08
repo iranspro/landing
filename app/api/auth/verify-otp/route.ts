@@ -16,7 +16,7 @@ const requestSchema = z.object({
   code: z.string().length(6, 'کد باید 6 رقم باشد'),
 });
 
-const DEFAULT_DATA_LIMIT = 10 * 1024 * 1024 * 1024; // 10GB در بایت
+const DEFAULT_DATA_LIMIT = 1 * 1024 * 1024 * 1024; // 1GB در بایت
 const DEFAULT_VALIDITY_DAYS = 30;
 
 /**
