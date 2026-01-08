@@ -1,26 +1,24 @@
-# ---------- Base ----------
+# ================= BASE =================
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# ---------- Dependencies ----------
+# ================= DEPS =================
 FROM base AS deps
 COPY package.json package-lock.json ./
 
-# ⛔ جلوگیری از prisma generate موقع npm ci
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+# ⛔️ خیلی مهم: جلوگیری کامل از اجرای postinstall
+RUN npm ci --ignore-scripts
 
-RUN npm ci
-
-# ---------- Builder ----------
+# ================= BUILDER =================
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# حالا prisma هست → generate امنه
+# حالا schema.prisma وجود دارد
 RUN npx prisma generate
 RUN npm run build
 
-# ---------- Runner ----------
+# ================= RUNNER =================
 FROM node:20-alpine AS runner
 WORKDIR /app
 
