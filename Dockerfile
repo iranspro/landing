@@ -23,10 +23,12 @@ COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN npm ci --no-audit
 
-# Try to download lightningcss prebuilt binary manually
-RUN mkdir -p node_modules/lightningcss && \
-    curl -L https://github.com/parcel-bundler/lightningcss/releases/download/v1.29.1/lightningcss-linux-x64-gnu.node -o /tmp/lightningcss.node || true && \
-    if [ -f /tmp/lightningcss.node ]; then cp /tmp/lightningcss.node node_modules/lightningcss/lightningcss.linux-x64-gnu.node; fi
+# Download lightningcss prebuilt binary from npm package
+RUN curl -L https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.29.1.tgz -o /tmp/lightningcss.tgz && \
+    mkdir -p /tmp/lightningcss-extract && \
+    tar -xzf /tmp/lightningcss.tgz -C /tmp/lightningcss-extract && \
+    mkdir -p node_modules/lightningcss && \
+    cp /tmp/lightningcss-extract/package/lightningcss.linux-x64-gnu.node node_modules/lightningcss/
 
 COPY . .
 
