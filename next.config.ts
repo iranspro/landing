@@ -9,7 +9,16 @@ const nextConfig: NextConfig = {
   
   // Image optimization
   images: {
-    domains: ['irans.pro', 'www.irans.pro'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'irans.pro',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.irans.pro',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
   },
   

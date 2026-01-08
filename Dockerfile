@@ -1,76 +1,46 @@
-# ================= BASE =================
-# Debian-based image to avoid musl/native-binary issues (Tailwind v4, LightningCSS, etc.)
-FROM node:20-bullseye-slim AS base
+# استفاده از Node.js LTS به عنوان تصویر پایه
+FROM node:20-alpine AS base
 
+# مرحله 1: نصب وابستگی‌ها
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# ================= DEPS =================
-FROM base AS deps
+# کپی فایل‌های package
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Build tools for native modules
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 make g++ ca-certificates openssl && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY package.json package-lock.json ./
-
-# Install deps (do NOT use npm ci here: package-lock generated on Windows can miss Linux optional deps)
-RUN npm install --no-audit --no-fund
-
-# Ensure lightningcss native binary package is present on Linux
-RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('node_modules/lightningcss/package.json','utf8')); process.stdout.write(p.optionalDependencies['lightningcss-linux-x64-gnu']);" \
-    | xargs -I{} npm install --no-audit --no-fund --no-save lightningcss-linux-x64-gnu@{}
-
-# Ensure Tailwind Oxide native binary package is present on Linux
-RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('node_modules/@tailwindcss/oxide/package.json','utf8')); process.stdout.write(p.optionalDependencies['@tailwindcss/oxide-linux-x64-gnu']);" \
-    | xargs -I{} npm install --no-audit --no-fund --no-save @tailwindcss/oxide-linux-x64-gnu@{}
-
-# ================= BUILDER =================
+# مرحله 2: ساخت پروژه
 FROM base AS builder
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates openssl && \
-    rm -rf /var/lib/apt/lists/*
-
+WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Prisma Client
-RUN npx prisma generate
-
-# Force webpack build (avoids Turbopack native binding edge-cases)
+# غیرفعال کردن تلمتری Next.js (اختیاری)
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npx next build --webpack
 
-# ================= RUNNER =================
-FROM node:20-bullseye-slim AS runner
+RUN npm run build
 
+# مرحله 3: اجرای پروژه در حالت production
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
 
-# Runtime deps for Prisma (OpenSSL)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates openssl && \
-    rm -rf /var/lib/apt/lists/*
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs nextjs
-
-# Next.js standalone output
+# کپی فایل‌های استاتیک و ضروری
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Prisma schema + migrations
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 3000
 
-# migrate + start
-CMD ["sh", "-c", "npx prisma@6.10.0 migrate deploy && node server.js"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
