@@ -15,11 +15,15 @@ RUN npm ci --no-audit || npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Rebuild native modules for Alpine
+RUN npm rebuild lightningcss
 
 # Build Next.js application (prisma generate happens in postinstall)
 ENV NEXT_TELEMETRY_DISABLED 1
