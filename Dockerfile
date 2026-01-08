@@ -14,8 +14,8 @@ RUN apt-get update && \
 
 COPY package.json package-lock.json ./
 
-# Install deps (includes dev deps, needed for build)
-RUN npm ci --no-audit --no-fund
+# Install deps (do NOT use npm ci here: package-lock generated on Windows can miss Linux optional deps)
+RUN npm install --no-audit --no-fund
 
 # ================= BUILDER =================
 FROM base AS builder
