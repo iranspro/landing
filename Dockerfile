@@ -1,71 +1,99 @@
-# Multi-stage build for Next.js production
-FROM node:20-slim AS base
+# ═══════════════════════════════════════════════════════════════
+# IransPro Landing - Production Docker Image
+# Multi-stage build برای Next.js 16 + Prisma 6 + PostgreSQL
+# ═══════════════════════════════════════════════════════════════
 
-# Install dependencies only when needed
+# ───────────────────────────────────────────────────────────────
+# Stage 1: Base Image
+# ───────────────────────────────────────────────────────────────
+FROM node:20-alpine AS base
+
+# Install OpenSSL برای Prisma (در Alpine نیاز است)
+RUN apk add --no-cache openssl libc6-compat
+
+WORKDIR /app
+
+# ───────────────────────────────────────────────────────────────
+# Stage 2: Dependencies
+# ───────────────────────────────────────────────────────────────
 FROM base AS deps
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
 
-# Copy package files AND prisma schema (needed for postinstall)
+# نصب ابزارهای لازم برای build کردن native modules
+RUN apk add --no-cache python3 make g++
+
+# کپی فایل‌های package
 COPY package.json package-lock.json* ./
+
+# کپی Prisma schema برای postinstall
 COPY prisma ./prisma
 
-# Install dependencies (prisma generate runs in postinstall)
-RUN npm ci --no-audit || npm install --no-audit
+# نصب dependencies
+# از --frozen-lockfile برای اطمینان از consistency استفاده می‌کنیم
+RUN npm ci --frozen-lockfile --no-audit --no-fund
 
-# Rebuild the source code only when needed
+# ───────────────────────────────────────────────────────────────
+# Stage 3: Builder
+# ───────────────────────────────────────────────────────────────
 FROM base AS builder
-RUN apt-get update && apt-get install -y python3 make g++ curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copy package files and install fresh
-COPY package.json package-lock.json* ./
-COPY prisma ./prisma
-RUN npm ci --no-audit
+# کپی node_modules از stage قبلی
+COPY --from=deps /app/node_modules ./node_modules
 
-# Download lightningcss prebuilt binary from npm package
-RUN curl -L https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.29.1.tgz -o /tmp/lightningcss.tgz && \
-    mkdir -p /tmp/lightningcss-extract && \
-    tar -xzf /tmp/lightningcss.tgz -C /tmp/lightningcss-extract && \
-    mkdir -p node_modules/lightningcss && \
-    cp /tmp/lightningcss-extract/package/lightningcss.linux-x64-gnu.node node_modules/lightningcss/
-
+# کپی کل پروژه
 COPY . .
 
-# Build Next.js application (prisma generate happens in postinstall)
-ENV NEXT_TELEMETRY_DISABLED 1
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Build Next.js application
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
 RUN npm run build
 
-# Production image, copy all the files and run next
+# ───────────────────────────────────────────────────────────────
+# Stage 4: Runner (Production Image)
+# ───────────────────────────────────────────────────────────────
 FROM base AS runner
+
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# تنظیمات production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# ایجاد گروه و کاربر nextjs (برای security)
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy public assets
+# کپی فایل‌های public
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Copy built application
+# کپی standalone output از Next.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# کپی Prisma files (برای migrations و client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
+# کپی Prisma CLI (برای migrate deploy در CMD)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# Switch به کاربر nextjs
 USER nextjs
 
+# Expose port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Health check (optional but recommended)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
 
-# Run migrations with prisma 6 and start server
-CMD ["sh", "-c", "npx prisma@6.10.0 migrate deploy && node server.js"]
+# Run migrations و start server
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node server.js"]
