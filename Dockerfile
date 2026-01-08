@@ -15,16 +15,18 @@ RUN npm ci --no-audit || npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
-# Install Rust for building lightningcss from source
-RUN apt-get update && apt-get install -y python3 make g++ curl && rm -rf /var/lib/apt/lists/*
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy package files and install fresh
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN npm ci --no-audit
+
+# Try to download lightningcss prebuilt binary manually
+RUN mkdir -p node_modules/lightningcss && \
+    curl -L https://github.com/parcel-bundler/lightningcss/releases/download/v1.29.1/lightningcss-linux-x64-gnu.node -o /tmp/lightningcss.node || true && \
+    if [ -f /tmp/lightningcss.node ]; then cp /tmp/lightningcss.node node_modules/lightningcss/lightningcss.linux-x64-gnu.node; fi
 
 COPY . .
 
