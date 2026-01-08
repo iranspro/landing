@@ -19,7 +19,7 @@ WORKDIR /app
 FROM base AS deps
 
 # نصب ابزارهای لازم برای build کردن native modules
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ curl
 
 # کپی فایل‌های package
 COPY package.json package-lock.json* ./
@@ -30,6 +30,13 @@ COPY prisma ./prisma
 # نصب dependencies
 # از --frozen-lockfile برای اطمینان از consistency استفاده می‌کنیم
 RUN npm ci --frozen-lockfile --no-audit --no-fund
+
+# دانلود و نصب lightningcss binary برای Alpine (musl)
+RUN LIGHTNINGCSS_VERSION=$(node -p "require('./node_modules/lightningcss/package.json').version") && \
+    curl -L "https://registry.npmjs.org/lightningcss-linux-x64-musl/-/lightningcss-linux-x64-musl-${LIGHTNINGCSS_VERSION}.tgz" -o /tmp/lightningcss.tgz && \
+    tar -xzf /tmp/lightningcss.tgz -C /tmp && \
+    cp /tmp/package/lightningcss.linux-x64-musl.node ./node_modules/lightningcss/ && \
+    rm -rf /tmp/lightningcss.tgz /tmp/package
 
 # ───────────────────────────────────────────────────────────────
 # Stage 3: Builder
