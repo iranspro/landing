@@ -60,27 +60,29 @@ services:
     networks:
       - iranspro
 
-  # PasarGuard VPN Panel
-  pasarguard:
-    image: pasarguard/panel:latest
-    container_name: iranspro_pasarguard
+  # Marzban VPN Panel
+  marzban:
+    image: gozargah/marzban:latest
+    container_name: iranspro_marzban
     restart: unless-stopped
     environment:
       UVICORN_HOST: "0.0.0.0"
       UVICORN_PORT: 8000
       SQLALCHEMY_DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/iranspro"
+      SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
+      SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
     volumes:
-      - pasarguard_data:/var/lib/pasarguard
-      - pasarguard_logs:/opt/pasarguard/logs
+      - marzban_data:/var/lib/marzban
+      - marzban_logs:/var/log/marzban
     depends_on:
       postgres:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pasarguard.rule=Host(`panel.irans.pro`)"
-      - "traefik.http.routers.pasarguard.entrypoints=websecure"
-      - "traefik.http.routers.pasarguard.tls.certresolver=letsencrypt"
-      - "traefik.http.services.pasarguard.loadbalancer.server.port=8000"
+      - "traefik.http.routers.marzban.rule=Host(`panel.irans.pro`)"
+      - "traefik.http.routers.marzban.entrypoints=websecure"
+      - "traefik.http.routers.marzban.tls.certresolver=letsencrypt"
+      - "traefik.http.services.marzban.loadbalancer.server.port=8000"
     networks:
       - iranspro
 
@@ -95,12 +97,12 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/iranspro"
-      PASARGUARD_URL: "http://pasarguard:8000"
+      PASARGUARD_URL: "http://marzban:8000"
       NEXT_PUBLIC_APP_URL: "https://irans.pro"
     depends_on:
       postgres:
         condition: service_healthy
-      pasarguard:
+      marzban:
         condition: service_started
     labels:
       - "traefik.enable=true"
@@ -121,9 +123,9 @@ volumes:
     driver: local
   postgres_data:
     driver: local
-  pasarguard_data:
+  marzban_data:
     driver: local
-  pasarguard_logs:
+  marzban_logs:
     driver: local
 
 networks:
