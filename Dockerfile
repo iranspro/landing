@@ -5,6 +5,8 @@ WORKDIR /app
 # ================= DEPS =================
 FROM base AS deps
 COPY package.json package-lock.json ./
+
+# اسکریپت‌ها اجرا نمی‌شن (Prisma امن)
 RUN npm ci --ignore-scripts
 
 # ================= BUILDER =================
@@ -12,7 +14,13 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# 🔥 خیلی مهم: native deps (lightningcss) اینجا ساخته می‌شن
+RUN npm rebuild lightningcss --build-from-source
+
+# Prisma
 RUN npx prisma generate
+
+# Next build
 RUN npm run build
 
 # ================= RUNNER =================
