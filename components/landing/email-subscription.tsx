@@ -8,6 +8,7 @@ export default function EmailSubscription() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
     "idle"
   );
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,15 +23,31 @@ export default function EmailSubscription() {
         body: JSON.stringify({ email }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setStatus("success");
+        setMessage(data.message || "لینک سابسکریپشن به ایمیل شما ارسال شد");
         setEmail("");
-        setTimeout(() => setStatus("idle"), 5000);
+        setTimeout(() => {
+          setStatus("idle");
+          setMessage("");
+        }, 5000);
       } else {
         setStatus("error");
+        setMessage(data.error || "خطا در ایجاد سابسکریپشن");
+        setTimeout(() => {
+          setStatus("idle");
+          setMessage("");
+        }, 5000);
       }
     } catch (error) {
       setStatus("error");
+      setMessage("خطا در برقراری ارتباط با سرور");
+      setTimeout(() => {
+        setStatus("idle");
+        setMessage("");
+      }, 5000);
     }
   };
 
@@ -70,6 +87,15 @@ export default function EmailSubscription() {
             : "آگاه‌سازی"}
         </button>
       </form>
+      {message && (
+        <p
+          className={`mt-3 text-center text-sm md:text-base ${
+            status === "success" ? "text-accent" : "text-red-400"
+          }`}
+        >
+          {message}
+        </p>
+      )}
     </section>
   );
 }
