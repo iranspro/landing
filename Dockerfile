@@ -15,7 +15,7 @@ RUN npm ci --no-audit || npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 make g++ curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy package files and install fresh
