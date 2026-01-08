@@ -15,6 +15,13 @@ interface NewSubscriptionNotification {
   createdAt: Date;
 }
 
+class DummyTelegramService {
+  async notifyNewSubscription(_params: NewSubscriptionNotification): Promise<void> {}
+  async notifyError(_message: string): Promise<void> {}
+  async notifyDailyStats(_stats: { totalUsers: number; activeSubscriptions: number; totalDataUsed: number }): Promise<void> {}
+  async testConnection(): Promise<boolean> { return false; }
+}
+
 class TelegramService {
   private botToken: string;
   private chatId: string;
@@ -152,12 +159,7 @@ export function getTelegramService(): TelegramService {
     if (!config.botToken || !config.chatId) {
       console.warn('Telegram configuration is incomplete. Notifications will be disabled.');
       // Return a dummy service that does nothing
-      return {
-        notifyNewSubscription: async () => {},
-        notifyError: async () => {},
-        notifyDailyStats: async () => {},
-        testConnection: async () => false,
-      } as TelegramService;
+      return new DummyTelegramService() as unknown as TelegramService;
     }
 
     telegramService = new TelegramService(config);
