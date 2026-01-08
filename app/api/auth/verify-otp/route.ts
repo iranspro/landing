@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        subscriptionUrl = pasarguardUser.subscription_url;
+        subscriptionUrl = pasarguardUser.subscription_url || null;
         marzbanUsername = username;
 
         // آپدیت اطلاعات در دیتابیس
