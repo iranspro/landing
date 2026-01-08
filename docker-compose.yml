@@ -63,14 +63,12 @@ services:
     image: gozargah/marzban:latest
     container_name: marzban
     restart: unless-stopped
+    command: >
+      bash -c "alembic upgrade head && 
+      python3 main.py --host 0.0.0.0 --port 8000"
     environment:
-      UVICORN_HOST: "0.0.0.0"
-      UVICORN_PORT: 8000
       SUDO_USERNAME: "${PASARGUARD_USERNAME:-admin}"
       SUDO_PASSWORD: "${PASARGUARD_PASSWORD:-admin}"
-      # Disable SSL since Traefik handles it
-      UVICORN_SSL_CERTFILE: ""
-      UVICORN_SSL_KEYFILE: ""
     volumes:
       - marzban_data:/var/lib/marzban
     labels:
